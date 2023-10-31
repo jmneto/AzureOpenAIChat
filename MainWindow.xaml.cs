@@ -1,5 +1,4 @@
-﻿// jmneto Azure Open AI Chat Client (Using Semantic Kernel)
-// Sept 2024 - Version 1.0
+﻿// Azure Open AI Chat Client (Using Semantic Kernel)
 
 using System;
 using System.IO.Compression;
@@ -9,12 +8,12 @@ using System.Windows;
 using System.Xml;
 using Microsoft.Win32;
 using System.Windows.Media.Animation;
+using System.Printing;
 
 namespace AzureOpenAIChat
 {
     public partial class MainWindow : Window
     {
-
         // Azure OpenAI Chat Client (Using Semantic Kernel)
         SKHelper sk;
 
@@ -22,39 +21,40 @@ namespace AzureOpenAIChat
         {
             InitializeComponent();
 
-            // Center form on Screen
-            Window currentWindow = Application.Current.MainWindow;
-            Size windowSize = new Size(currentWindow.Width, currentWindow.Height);
-            Rect screenSize = SystemParameters.WorkArea;
-            currentWindow.Left = (screenSize.Width / 2) - (windowSize.Width / 2);
-            currentWindow.Top = (screenSize.Height / 2) - (windowSize.Height / 2);
+            // Init/Load From Registry
+            if (string.IsNullOrEmpty(txtAPIEndPoint.Text = RegistryHelper.ReadAppInfo("APIENDPOINT")))
+                txtAPIEndPoint.Text = "Your Azure OpenAI Endpoint";
+
+            if (string.IsNullOrEmpty(txtAPIKey.Text = RegistryHelper.ReadAppInfo("APIKEY")))
+                txtAPIKey.Text = "Your Azure OpenAI API Service Key";
+
+            if (string.IsNullOrEmpty(txtDeployment.Text = RegistryHelper.ReadAppInfo("DEPLOYMENT")))
+                txtDeployment.Text = "Your Azure OpenAI Model Deployment Name";
+
+            if (string.IsNullOrEmpty(txtTemperature.Text = RegistryHelper.ReadAppInfo("TEMPERATURE")))
+                txtTemperature.Text = "0.5";
+
+            if (string.IsNullOrEmpty(txtMaxTokens.Text = RegistryHelper.ReadAppInfo("MAXTOKENS")))
+                txtMaxTokens.Text = "2048";
+
+            var left = RegistryHelper.ReadAppInfo("WINDOWLEFT");
+            var top = RegistryHelper.ReadAppInfo("WINDOWTOP");
+            if (!string.IsNullOrEmpty(left) && !string.IsNullOrEmpty(top))
+            {
+                this.Left = double.Parse(left);
+                this.Top = double.Parse(top);
+            }
+            else
+            {
+                // Center Window on Screen
+                Size windowSize = new Size(this.Width, this.Height);
+                Rect screenSize = SystemParameters.WorkArea;
+                this.Left = (screenSize.Width / 2) - (windowSize.Width / 2);
+                this.Top = (screenSize.Height / 2) - (windowSize.Height / 2);
+            }
 
             // Set focus to promt field
             txtPrompt.Focus();
-        }
-
-        private void Window_Loaded(object sender, RoutedEventArgs e)
-        {
-            // Init/Load From Registry
-            txtAPIEndPoint.Text = RegistryHelper.ReadAppInfo("APIENDPOINT");
-            if (txtAPIEndPoint.Text == string.Empty)
-                txtAPIEndPoint.Text = "Your Azure OpenAI Endpoint";
-
-            txtAPIKey.Text = RegistryHelper.ReadAppInfo("APIKEY");
-            if (txtAPIKey.Text == string.Empty)
-                txtAPIKey.Text = "Your Azure OpenAI API Service Key";
-
-            txtDeployment.Text = RegistryHelper.ReadAppInfo("DEPLOYMENT");
-            if (txtDeployment.Text == string.Empty)
-                txtDeployment.Text = "Your Azure OpenAI Model Deployment Name";
-
-            txtTemperature.Text = RegistryHelper.ReadAppInfo("TEMPERATURE");
-            if (txtTemperature.Text == string.Empty)
-                txtTemperature.Text = "0.5";
-
-            txtMaxTokens.Text = RegistryHelper.ReadAppInfo("MAXTOKENS");
-            if (txtMaxTokens.Text == string.Empty)
-                txtMaxTokens.Text = "2048";
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -65,13 +65,15 @@ namespace AzureOpenAIChat
             RegistryHelper.WriteAppInfo("DEPLOYMENT", txtDeployment.Text);
             RegistryHelper.WriteAppInfo("TEMPERATURE", txtTemperature.Text);
             RegistryHelper.WriteAppInfo("MAXTOKENS", txtMaxTokens.Text);
+            RegistryHelper.WriteAppInfo("WINDOWLEFT", this.Left.ToString());
+            RegistryHelper.WriteAppInfo("WINDOWTOP", this.Top.ToString());
         }
 
         private void btnSend_Click(object sender, RoutedEventArgs e)
         {
-
-            if(sk == null)
+            if (sk == null)
             {
+                // Get the parameters from the screen
                 string apiEndpoint = txtAPIEndPoint.Text;
                 string apikey = txtAPIKey.Text;
                 string deployment = txtDeployment.Text;
@@ -80,19 +82,19 @@ namespace AzureOpenAIChat
 
                 sk = new SKHelper(deployment, apiEndpoint, apikey, maxtokens, temperature);
 
-                // make TxtDeployment readonly
+                // make Setup readonly
                 txtAPIEndPoint.IsReadOnly = true;
                 txtAPIKey.IsReadOnly = true;
                 txtDeployment.IsReadOnly = true;
                 txtTemperature.IsReadOnly = true;
                 txtMaxTokens.IsReadOnly = true;
 
-                groupedElements.Visibility = Visibility.Hidden;
-                gridcompletion.Margin = new Thickness(10, 10, 10, 220);
+                // Programmatically hide the top area
+                topRow.Height = new GridLength(0);
             }
 
             // Trim Prompt
-            string myprompt = txtPrompt.Text;
+            string myprompt = txtPrompt.Text.Trim();
 
             // If prompt is empty reset and return
             if (myprompt == string.Empty)
@@ -137,6 +139,7 @@ namespace AzureOpenAIChat
             });
         }
 
+        // Clear Context
         private void btnClearCtx_Click(object sender, RoutedEventArgs e)
         {
             btnClearCtx.IsEnabled = false;

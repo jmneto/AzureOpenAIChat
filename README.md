@@ -15,16 +15,6 @@ It can be used to test diverse LLM models like GPT-3, GPT-3.5 Turbo or GPT4 mode
 
 - Microsoft.SemanticKernel
 
-## Configuration
-
-The following parameters must be set in the constructor of the `SKHelper` class:
-
-- `model`: The model to use for chat completion.
-- `azureEndpoint`: The Azure endpoint URL.
-- `apiKey`: The API key for the Azure endpoint.
-- `maxTokens`: The maximum number of tokens in the chat response.
-- `temperature`: The temperature for the chat response generation.
-
 ## Credits
 
-This project was developed by jmneto in September 2024.
+This project was developed by jmneto in September 2023.

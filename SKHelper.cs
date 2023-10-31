@@ -1,11 +1,9 @@
-﻿// jmneto Azure Open AI Chat Client (Using Semantic Kernel)
-// Sept 2024 - Version 1.0
+﻿// Azure Open AI Chat Client (Using Semantic Kernel)
 
 using System.Threading.Tasks;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.SemanticFunctions;
+using Microsoft.SemanticKernel.Connectors.AI.OpenAI;
 using Microsoft.SemanticKernel.Orchestration;
-using Microsoft.SemanticKernel.SkillDefinition;
 
 namespace AzureOpenAIChat
 {
@@ -31,21 +29,16 @@ namespace AzureOpenAIChat
             // Semantic Kernel
             _kernel = (new KernelBuilder()).WithAzureChatCompletionService(model, azureEndpoint, apiKey).Build();
 
-            // Prompt Template
-            PromptTemplateConfig promptConfig = new PromptTemplateConfig
+            // Request Setting
+            OpenAIRequestSettings requestSettings = new()
             {
-                Completion =
-                    {
-                        MaxTokens = maxTokens,
-                        Temperature = temperature,
-                        TopP = topP
-                    }
+                MaxTokens = maxTokens,
+                Temperature = temperature,
+                TopP = topP,
             };
 
             // Chat Function
-            var promptTemplate = new PromptTemplate(_skPrompt, promptConfig, _kernel);
-            var functionConfig = new SemanticFunctionConfig(promptConfig, promptTemplate);
-            _chatFunction = _kernel.RegisterSemanticFunction("ChatBot", "Chat", functionConfig);
+            _chatFunction = _kernel.CreateSemanticFunction(_skPrompt, requestSettings);
             _context = _kernel.CreateNewContext();
 
             // Init Context

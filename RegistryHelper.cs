@@ -1,5 +1,4 @@
-﻿// jmneto Azure Open AI Chat Client (Using Semantic Kernel)
-// Sept 2024 - Version 1.0
+﻿// Azure Open AI Chat Client (Using Semantic Kernel)
 
 using Microsoft.Win32;
 
@@ -15,18 +14,16 @@ namespace AzureOpenAIChat
         public static void WriteAppInfo(string key, string value)
         {
             using (RegistryKey registryKey = Registry.CurrentUser.CreateSubKey(AppKey))
-            {
                 registryKey.SetValue(key, value);
-            }
         }
 
         public static string? ReadAppInfo(string key)
         {
             using (RegistryKey registryKey = Registry.CurrentUser.OpenSubKey(AppKey))
-            {
-                if (registryKey == null) return null;
-                return (string)registryKey.GetValue(key);
-            }
+                if (registryKey == null)
+                    return null;
+                else
+                    return (string)registryKey.GetValue(key);
         }
     }
 }
