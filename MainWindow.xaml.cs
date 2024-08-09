@@ -15,7 +15,7 @@ namespace AzureOpenAIChat
     public partial class MainWindow : Window
     {
         // Azure OpenAI Chat Client (Using Semantic Kernel)
-        SKHelper sk;
+        SKHelper? sk;
 
         public MainWindow()
         {
@@ -110,6 +110,7 @@ namespace AzureOpenAIChat
             // Wait message 
             lblCompletion.Content = "Request is processing...";
             txtCompletion.Text = "";
+            btnSend.IsEnabled = false;
 
             // Call the REST API on a separate thread from UI
             Task.Run(() =>
@@ -119,14 +120,13 @@ namespace AzureOpenAIChat
                     // Call the REST API
                     var completionText = sk.Chat(myprompt).Result;
 
-                    // If not empty update the screen
-                    if (completionText != string.Empty)
-                        Dispatcher.Invoke(() =>
-                        {
-                            txtCompletion.Text = completionText;
-                            btnClearCtx.IsEnabled = true;
-                            lblCompletion.Content = "Completion";
-                        });
+                    Dispatcher.Invoke(() =>
+                    {
+                        txtCompletion.Text = completionText;
+                        btnClearCtx.IsEnabled = true;
+                        btnSend.IsEnabled = true;
+                        lblCompletion.Content = "Completion";
+                    });
                 }
                 catch (Exception ex)
                 {
@@ -143,7 +143,8 @@ namespace AzureOpenAIChat
         private void btnClearCtx_Click(object sender, RoutedEventArgs e)
         {
             btnClearCtx.IsEnabled = false;
-            sk.InitContext();
+            if (sk != null)
+                sk.InitContext();
             lblCompletion.Content = "Completion context cleared";
         }
     }

@@ -2,17 +2,16 @@
 
 using System.Threading.Tasks;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Connectors.AI.OpenAI;
-using Microsoft.SemanticKernel.Orchestration;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 
 namespace AzureOpenAIChat
 {
     internal class SKHelper
     {
         // Semantic Kernel Objects
-        IKernel _kernel;
-        SKContext _context;
-        ISKFunction _chatFunction;
+        Kernel _kernel;
+        KernelArguments _arguments;
+        KernelFunction _chatFunction;
 
         // ChatBot Prompt
         const string _skPrompt = @"
@@ -27,10 +26,10 @@ namespace AzureOpenAIChat
         public SKHelper(string model, string azureEndpoint, string apiKey, int maxTokens, double temperature, double topP = 0.5)
         {
             // Semantic Kernel
-            _kernel = (new KernelBuilder()).WithAzureChatCompletionService(model, azureEndpoint, apiKey).Build();
+            _kernel = Kernel.CreateBuilder().AddAzureOpenAIChatCompletion(model, azureEndpoint, apiKey).Build();
 
             // Request Setting
-            OpenAIRequestSettings requestSettings = new()
+            OpenAIPromptExecutionSettings requestSettings = new()
             {
                 MaxTokens = maxTokens,
                 Temperature = temperature,
@@ -38,8 +37,8 @@ namespace AzureOpenAIChat
             };
 
             // Chat Function
-            _chatFunction = _kernel.CreateSemanticFunction(_skPrompt, requestSettings);
-            _context = _kernel.CreateNewContext();
+            _chatFunction = _kernel.CreateFunctionFromPrompt(_skPrompt, requestSettings);
+            _arguments = new();
 
             // Init Context
             InitContext();
@@ -48,23 +47,23 @@ namespace AzureOpenAIChat
         // Init Context
         public void InitContext()
         {
-            _context.Variables["history"] = "";
+            _arguments["history"] = "";
         }
 
         // Chat
         public async Task<string> Chat(string input)
         {
             // Update Context
-            _context.Variables["userInput"] = input;
+            _arguments["userInput"] = input;
 
             // Invoke Chat Function
-            var answer = await _chatFunction.InvokeAsync(_context);
+            var answer = await _chatFunction.InvokeAsync(_kernel, _arguments);
 
             // Update Context
-            _context.Variables["history"] += $"\nUser: {input}\nMelody: {answer}\n";
+            _arguments["history"] += $"\nUser: {input}\nChatBot: {answer}\n";
 
             // Return Answer
-            return _context.ToString();
+            return answer.ToString();
         }
     }
 }
