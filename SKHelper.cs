@@ -31,9 +31,9 @@ namespace AzureOpenAIChat
             // Request Setting
             OpenAIPromptExecutionSettings requestSettings = new()
             {
-                MaxTokens = maxTokens,
-                Temperature = temperature,
-                TopP = topP,
+                //MaxTokens = maxTokens,
+                //Temperature = temperature,
+                //TopP = topP,
             };
 
             // Chat Function
