@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AzureOpenAIChat"
+        xmlns:mdxam="clr-namespace:MdXaml;assembly=MdXaml"
         mc:Ignorable="d"
         Title="Azure OpenAI Chat" 
         Height="540" 
@@ -18,7 +19,7 @@
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="80" Name="topRow"/>
+            <RowDefinition Height="120" Name="topRow"/>
             <RowDefinition Height="*" Name="middleRow"/>
             <RowDefinition Height="Auto" Name="splitterRow"/>
             <RowDefinition Height="150" MinHeight="150" Name="bottomRow"/>
@@ -27,44 +28,73 @@
         <Border Background="LightGray" Grid.Row="0" Name="topArea">
             <Grid x:Name="groupedElements" Visibility="Visible">
                 <Label x:Name="label0" Content="API Endpoint:" HorizontalAlignment="Left" Margin="12,10,0,0" VerticalAlignment="Top" Width="112" FontWeight="SemiBold"/>
-                <Label x:Name="label1" Content="API Key:" HorizontalAlignment="Left" Margin="422,10,0,0" VerticalAlignment="Top" Width="86" FontWeight="SemiBold"/>
+                <Label x:Name="label1" Content="Tenant ID:" HorizontalAlignment="Left" Margin="422,10,0,0" VerticalAlignment="Top" Width="86" FontWeight="SemiBold"/>
                 <Label x:Name="label2" Content="Deployment:" HorizontalAlignment="Left"  Margin="12,40,0,0" VerticalAlignment="Top" Width="100" FontWeight="SemiBold"/>
-                <Label x:Name="label3" Content="Temperature:" HorizontalAlignment="Left" Margin="423,39,0,0" VerticalAlignment="Top" Width="109" FontWeight="SemiBold"/>
-                <Label x:Name="label4" Content="Max Tokens:" HorizontalAlignment="Left" Margin="616,40,0,0" VerticalAlignment="Top" Width="101" FontWeight="SemiBold"/>
+                <Label x:Name="label5" Content="Client ID:" HorizontalAlignment="Left" Margin="422,40,0,0" VerticalAlignment="Top" Width="86" FontWeight="SemiBold"/>
+                <Label x:Name="label6" Content="Client Secret:" HorizontalAlignment="Left" Margin="12,70,0,0" VerticalAlignment="Top" Width="100" FontWeight="SemiBold"/>
+                <Label x:Name="label3" Content="Temperature:" HorizontalAlignment="Left" Margin="423,69,0,0" VerticalAlignment="Top" Width="109" FontWeight="SemiBold"/>
+                <Label x:Name="label4" Content="Max Tokens:" HorizontalAlignment="Left" Margin="616,70,0,0" VerticalAlignment="Top" Width="101" FontWeight="SemiBold"/>
                 <TextBox x:Name="txtAPIEndPoint" HorizontalAlignment="Left" Margin="112,15,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="300" TabIndex="0"/>
-                <TextBox x:Name="txtAPIKey" HorizontalAlignment="Left" Margin="489,15,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="285" TabIndex="1"/>
+                <TextBox x:Name="txtTenantId" HorizontalAlignment="Left" Margin="489,15,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="285" TabIndex="1"/>
                 <TextBox x:Name="txtDeployment" HorizontalAlignment="Left" Margin="112,45,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="300" TabIndex="2"/>
-                <TextBox x:Name="txtTemperature" HorizontalAlignment="Left" Margin="525,44,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="60" TabIndex="3"/>
-                <TextBox x:Name="txtMaxTokens" HorizontalAlignment="Left" Margin="700,45,11,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="60" TabIndex="4"/>
+                <TextBox x:Name="txtClientId" HorizontalAlignment="Left" Margin="489,45,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="285" TabIndex="3"/>
+                <TextBox x:Name="txtClientSecret" HorizontalAlignment="Left" Margin="112,75,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="300" TabIndex="4"/>
+                <TextBox x:Name="txtTemperature" HorizontalAlignment="Left" Margin="525,74,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="60" TabIndex="5"/>
+                <TextBox x:Name="txtMaxTokens" HorizontalAlignment="Left" Margin="700,75,11,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="60" TabIndex="6"/>
             </Grid>
         </Border>
 
-        <Border Background="LightBlue" Grid.Row="1" Name="middleArea">
-            <Grid x:Name="gridcompletion" Visibility="Visible">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-                <Label x:Name="lblCompletion" Content="Completion" HorizontalAlignment="Left" VerticalAlignment="Top" FontWeight="SemiBold" Grid.Row="0"/>
-                <TextBox x:Name="txtCompletion" 
-                    IsReadOnly="True"
-                    ScrollViewer.VerticalScrollBarVisibility="Auto" 
-                    ScrollViewer.HorizontalScrollBarVisibility="Auto" 
-                    TextWrapping="Wrap" 
-                    AcceptsReturn="True" 
-                    AcceptsTab="False" 
-                    VerticalScrollBarVisibility="Auto"
-                    HorizontalScrollBarVisibility="Auto"
-                    TabIndex="8"
-                    Grid.Row="1"/>
-            </Grid>
+        <Border Background="#FF66A6BB" Grid.Row="1" Name="middleArea">
+            <TabControl x:Name="tabCompletionControl" Margin="6">
+                <TabItem Header="Completion">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Label x:Name="lblCompletion" Content="Completion" HorizontalAlignment="Left" VerticalAlignment="Top" FontWeight="SemiBold" Grid.Row="0"/>
+                        <TextBox x:Name="txtCompletion" 
+                                    IsReadOnly="True"
+                                    ScrollViewer.VerticalScrollBarVisibility="Auto" 
+                                    ScrollViewer.HorizontalScrollBarVisibility="Auto" 
+                                    TextWrapping="Wrap" 
+                                    AcceptsReturn="True" 
+                                    AcceptsTab="False" 
+                                    VerticalScrollBarVisibility="Auto"
+                                    HorizontalScrollBarVisibility="Auto"
+                                    TabIndex="11"
+                                    BorderBrush="LightBlue"
+                                    BorderThickness="1"
+                                    Grid.Row="1"/>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Formatted Completion">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Label x:Name="lblFormattedCompletion" Content="Formatted Completion" HorizontalAlignment="Left" VerticalAlignment="Top" FontWeight="SemiBold" Grid.Row="0"/>
+                        <Border BorderBrush="LightBlue" BorderThickness="1" Grid.Row="1">
+                            <mdxam:MarkdownScrollViewer x:Name="MarkdownViewer" 
+                                    ScrollViewer.VerticalScrollBarVisibility="Auto" 
+                                    ScrollViewer.HorizontalScrollBarVisibility="Auto" 
+                                    VerticalScrollBarVisibility="Auto"
+                                    HorizontalScrollBarVisibility="Auto"
+                                    xml:space="preserve" 
+                                    TabIndex="12"
+                                    Grid.Row="1"/>
+                        </Border>
+                    </Grid>
+                </TabItem>
+            </TabControl>
         </Border>
 
         <GridSplitter Grid.Row="2" Height="6" HorizontalAlignment="Stretch"
                       VerticalAlignment="Top" Background="Black" ResizeBehavior="PreviousAndNext"
                       ResizeDirection="Rows"/>
 
-        <Border Background="LightSlateGray" Grid.Row="3" Name="bottomArea">
+        <Border Background="#FF66A6BB" Grid.Row="3" Name="bottomArea">
             <Grid x:Name="gridprompt" Visibility="Visible">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -85,13 +115,14 @@
                     AcceptsTab="True" 
                     VerticalScrollBarVisibility="Auto"
                     HorizontalScrollBarVisibility="Auto"
-                    TabIndex="5"
+                    TabIndex="7"
                     Grid.Row="1"
                     Grid.Column="0"
                     VerticalAlignment="Stretch"></TextBox>
                 <StackPanel Grid.Row="1" Grid.Column="1">
-                    <Button x:Name="btnSend" Content="Send (alt+enter)"  TabIndex="6" IsEnabled="True" IsDefault="True" Click="btnSend_Click" FontWeight="Bold" Grid.Row="1" Grid.Column="1" Height="60"/>
-                    <Button x:Name="btnClearCtx" Content="Clear Context" TabIndex="7" IsEnabled="False" Click="btnClearCtx_Click" Grid.Row="1" Grid.Column="1" Height="60"/>
+                    <Button x:Name="btnSend" Content="Send (alt+enter)"  TabIndex="8" IsEnabled="True" IsDefault="True" Click="btnSend_Click" FontWeight="Bold" Height="40"/>
+                    <Button x:Name="btnClearCtx" Content="Clear Context" TabIndex="9" IsEnabled="False" Click="btnClearCtx_Click" Height="40"/>
+                    <Button x:Name="btnCopyCtx" Content="Copy Context" TabIndex="10" IsEnabled="False" Click="btnCopyCtx_Click" Height="40"/>
                 </StackPanel>
             </Grid>
         </Border>

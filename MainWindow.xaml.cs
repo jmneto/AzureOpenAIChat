@@ -1,14 +1,8 @@
 ﻿// Azure Open AI Chat Client (Using Semantic Kernel)
 
 using System;
-using System.IO.Compression;
-using System.IO;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Xml;
-using Microsoft.Win32;
-using System.Windows.Media.Animation;
-using System.Printing;
+using System.Globalization;
 
 namespace AzureOpenAIChat
 {
@@ -25,11 +19,17 @@ namespace AzureOpenAIChat
             if (string.IsNullOrEmpty(txtAPIEndPoint.Text = RegistryHelper.ReadAppInfo("APIENDPOINT")))
                 txtAPIEndPoint.Text = "Your Azure OpenAI Endpoint";
 
-            if (string.IsNullOrEmpty(txtAPIKey.Text = RegistryHelper.ReadAppInfo("APIKEY")))
-                txtAPIKey.Text = "Your Azure OpenAI API Service Key";
+            if (string.IsNullOrEmpty(txtTenantId.Text = RegistryHelper.ReadAppInfo("TENANTID")))
+                txtTenantId.Text = "Your Entra Tenant ID";
 
             if (string.IsNullOrEmpty(txtDeployment.Text = RegistryHelper.ReadAppInfo("DEPLOYMENT")))
                 txtDeployment.Text = "Your Azure OpenAI Model Deployment Name";
+
+            if (string.IsNullOrEmpty(txtClientId.Text = RegistryHelper.ReadAppInfo("CLIENTID")))
+                txtClientId.Text = "Your App Registration Client ID";
+
+            if (string.IsNullOrEmpty(txtClientSecret.Text = RegistryHelper.ReadAppInfo("CLIENTSECRET")))
+                txtClientSecret.Text = "Your App Registration Client Secret";
 
             if (string.IsNullOrEmpty(txtTemperature.Text = RegistryHelper.ReadAppInfo("TEMPERATURE")))
                 txtTemperature.Text = "0.5";
@@ -61,31 +61,57 @@ namespace AzureOpenAIChat
         {
             // Save to Registry
             RegistryHelper.WriteAppInfo("APIENDPOINT", txtAPIEndPoint.Text);
-            RegistryHelper.WriteAppInfo("APIKEY", txtAPIKey.Text);
+            RegistryHelper.WriteAppInfo("TENANTID", txtTenantId.Text);
             RegistryHelper.WriteAppInfo("DEPLOYMENT", txtDeployment.Text);
+            RegistryHelper.WriteAppInfo("CLIENTID", txtClientId.Text);
+            RegistryHelper.WriteAppInfo("CLIENTSECRET", txtClientSecret.Text);
             RegistryHelper.WriteAppInfo("TEMPERATURE", txtTemperature.Text);
             RegistryHelper.WriteAppInfo("MAXTOKENS", txtMaxTokens.Text);
             RegistryHelper.WriteAppInfo("WINDOWLEFT", this.Left.ToString());
             RegistryHelper.WriteAppInfo("WINDOWTOP", this.Top.ToString());
         }
 
-        private void btnSend_Click(object sender, RoutedEventArgs e)
+        private async void btnSend_Click(object sender, RoutedEventArgs e)
         {
             if (sk == null)
             {
                 // Get the parameters from the screen
                 string apiEndpoint = txtAPIEndPoint.Text;
-                string apikey = txtAPIKey.Text;
+                string tenantId = txtTenantId.Text;
                 string deployment = txtDeployment.Text;
-                double temperature = double.Parse(txtTemperature.Text);
-                int maxtokens = int.Parse(txtMaxTokens.Text);
+                string clientId = txtClientId.Text;
+                string clientSecret = txtClientSecret.Text;
 
-                sk = new SKHelper(deployment, apiEndpoint, apikey, maxtokens, temperature);
+                if (string.IsNullOrWhiteSpace(apiEndpoint) ||
+                    string.IsNullOrWhiteSpace(tenantId) ||
+                    string.IsNullOrWhiteSpace(deployment) ||
+                    string.IsNullOrWhiteSpace(clientId) ||
+                    string.IsNullOrWhiteSpace(clientSecret))
+                {
+                    MessageBox.Show("Please fill in all required settings.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!double.TryParse(txtTemperature.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double temperature))
+                {
+                    MessageBox.Show("Temperature must be a valid number (example: 0.5).", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!int.TryParse(txtMaxTokens.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int maxtokens))
+                {
+                    MessageBox.Show("Max Tokens must be a valid integer.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                sk = new SKHelper(deployment, apiEndpoint, tenantId, clientId, clientSecret, maxtokens, temperature);
 
                 // make Setup readonly
                 txtAPIEndPoint.IsReadOnly = true;
-                txtAPIKey.IsReadOnly = true;
+                txtTenantId.IsReadOnly = true;
                 txtDeployment.IsReadOnly = true;
+                txtClientId.IsReadOnly = true;
+                txtClientSecret.IsReadOnly = true;
                 txtTemperature.IsReadOnly = true;
                 txtMaxTokens.IsReadOnly = true;
 
@@ -100,52 +126,65 @@ namespace AzureOpenAIChat
             if (myprompt == string.Empty)
             {
                 // Reset Completion
-                txtCompletion.Text = "";
+                txtCompletion.Text = string.Empty;
+                MarkdownViewer.Markdown = string.Empty;
                 lblCompletion.Content = "Completion context cleared";
                 btnClearCtx.IsEnabled = false;
-                sk.InitContext();
+                btnCopyCtx.IsEnabled = false;
+                if (sk != null)
+                    sk.InitContext();
                 return;
             }
 
             // Wait message 
             lblCompletion.Content = "Request is processing...";
-            txtCompletion.Text = "";
+            txtCompletion.Text = string.Empty;
+            MarkdownViewer.Markdown = string.Empty;
             btnSend.IsEnabled = false;
 
-            // Call the REST API on a separate thread from UI
-            Task.Run(() =>
+            try
             {
-                try
-                {
-                    // Call the REST API
-                    var completionText = sk.Chat(myprompt).Result;
-
-                    Dispatcher.Invoke(() =>
-                    {
-                        txtCompletion.Text = completionText;
-                        btnClearCtx.IsEnabled = true;
-                        btnSend.IsEnabled = true;
-                        lblCompletion.Content = "Completion";
-                    });
-                }
-                catch (Exception ex)
-                {
-                    Dispatcher.Invoke(() =>
-                    {
-                        lblCompletion.Content = "The request was unsuccessful. Exception below";
-                        txtCompletion.Text = ex.Message;
-                    });
-                }
-            });
+                var completionText = await sk.Chat(myprompt);
+                txtCompletion.Text = completionText;
+                MarkdownViewer.Markdown = completionText;
+                btnClearCtx.IsEnabled = true;
+                btnCopyCtx.IsEnabled = true;
+                lblCompletion.Content = "Completion";
+            }
+            catch (Exception ex)
+            {
+                lblCompletion.Content = "The request was unsuccessful. Exception below";
+                txtCompletion.Text = ex.Message;
+                MarkdownViewer.Markdown = string.Empty;
+            }
+            finally
+            {
+                btnSend.IsEnabled = true;
+            }
         }
 
         // Clear Context
         private void btnClearCtx_Click(object sender, RoutedEventArgs e)
         {
             btnClearCtx.IsEnabled = false;
+            btnCopyCtx.IsEnabled = false;
             if (sk != null)
                 sk.InitContext();
             lblCompletion.Content = "Completion context cleared";
+        }
+
+        // Copy Context
+        private void btnCopyCtx_Click(object sender, RoutedEventArgs e)
+        {
+            string? context = sk?.GetFullContext();
+            if (string.IsNullOrWhiteSpace(context))
+            {
+                lblCompletion.Content = "No context to copy";
+                return;
+            }
+
+            Clipboard.SetText(context);
+            lblCompletion.Content = "Completion context copied to clipboard";
         }
     }
 }

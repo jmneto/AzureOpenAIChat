@@ -1,6 +1,8 @@
 ﻿// Azure Open AI Chat Client (Using Semantic Kernel)
 
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Azure.Identity;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 
@@ -22,13 +24,19 @@ namespace AzureOpenAIChat
         User: {{$userInput}}
         ChatBot:";
 
-        // Constructor
-        public SKHelper(string model, string azureEndpoint, string apiKey, int maxTokens, double temperature, double topP = 0.5)
-        {
-            // Semantic Kernel
-            _kernel = Kernel.CreateBuilder().AddAzureOpenAIChatCompletion(model, azureEndpoint, apiKey).Build();
+        const int MaxHistoryChars = 8000;
+        readonly Queue<string> _historyEntries = new();
+        int _historyChars;
 
-            // Request Setting
+        // Constructor
+        public SKHelper(string model, string azureEndpoint, string tenantId, string clientId, string clientSecret, int maxTokens, double temperature, double topP = 0.5)
+        {
+            var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+
+            _kernel = Kernel.CreateBuilder()
+                .AddAzureOpenAIChatCompletion(model, azureEndpoint, credential)
+                .Build();
+
             OpenAIPromptExecutionSettings requestSettings = new()
             {
                 //MaxTokens = maxTokens,
@@ -36,34 +44,51 @@ namespace AzureOpenAIChat
                 //TopP = topP,
             };
 
-            // Chat Function
             _chatFunction = _kernel.CreateFunctionFromPrompt(_skPrompt, requestSettings);
             _arguments = new();
 
-            // Init Context
             InitContext();
         }
 
         // Init Context
         public void InitContext()
         {
-            _arguments["history"] = "";
+            _historyEntries.Clear();
+            _historyChars = 0;
+            _arguments["history"] = string.Empty;
+        }
+
+        // Get Full Context
+        public string? GetFullContext()
+        {
+            return _arguments["history"]?.ToString();
         }
 
         // Chat
         public async Task<string> Chat(string input)
         {
-            // Update Context
             _arguments["userInput"] = input;
 
-            // Invoke Chat Function
             var answer = await _chatFunction.InvokeAsync(_kernel, _arguments);
+            string answerText = answer?.ToString() ?? string.Empty;
 
-            // Update Context
-            _arguments["history"] += $"\nUser: {input}\nChatBot: {answer}\n";
+            AppendHistory($"User: {input}\nChatBot: {answerText}\n");
 
-            // Return Answer
-            return answer.ToString();
+            return answerText;
+        }
+
+        void AppendHistory(string entry)
+        {
+            _historyEntries.Enqueue(entry);
+            _historyChars += entry.Length;
+
+            while (_historyChars > MaxHistoryChars && _historyEntries.Count > 0)
+            {
+                var removed = _historyEntries.Dequeue();
+                _historyChars -= removed.Length;
+            }
+
+            _arguments["history"] = string.Concat(_historyEntries);
         }
     }
 }

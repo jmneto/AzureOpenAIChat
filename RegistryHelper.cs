@@ -19,11 +19,11 @@ namespace AzureOpenAIChat
 
         public static string? ReadAppInfo(string key)
         {
-            using (RegistryKey registryKey = Registry.CurrentUser.OpenSubKey(AppKey))
+            using (RegistryKey? registryKey = Registry.CurrentUser.OpenSubKey(AppKey))
                 if (registryKey == null)
                     return null;
                 else
-                    return (string)registryKey.GetValue(key);
+                    return (string?)registryKey.GetValue(key);
         }
     }
 }
