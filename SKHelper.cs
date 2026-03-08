@@ -1,5 +1,6 @@
 ﻿// Azure Open AI Chat Client (Using Semantic Kernel)
 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Azure.Identity;
@@ -31,11 +32,25 @@ namespace AzureOpenAIChat
         // Constructor
         public SKHelper(string model, string azureEndpoint, string tenantId, string clientId, string clientSecret, int maxTokens, double temperature, double topP = 0.5)
         {
-            var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+            // In the constructor, wrap credential creation in try-catch for diagnostics
+            try
+            {
+                var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+                
+                // Test the credential explicitly before using it
+                var tokenRequestContext = new Azure.Core.TokenRequestContext(
+                    new[] { "https://cognitiveservices.azure.com/.default" });
+                var token = credential.GetToken(tokenRequestContext);
 
-            _kernel = Kernel.CreateBuilder()
-                .AddAzureOpenAIChatCompletion(model, azureEndpoint, credential)
-                .Build();
+                _kernel = Kernel.CreateBuilder()
+                    .AddAzureOpenAIChatCompletion(model, azureEndpoint, credential)
+                    .Build();
+            }
+            catch (AuthenticationFailedException ex)
+            {
+                // This will give you the detailed error message from Azure AD
+                throw new Exception($"Authentication failed: {ex.Message}", ex);
+            }
 
             OpenAIPromptExecutionSettings requestSettings = new()
             {
