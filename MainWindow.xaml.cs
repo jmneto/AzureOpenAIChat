@@ -104,19 +104,29 @@ namespace AzureOpenAIChat
                     return;
                 }
 
-                sk = new SKHelper(deployment, apiEndpoint, tenantId, clientId, clientSecret, maxtokens, temperature);
+                try
+                {
+                    sk = new SKHelper(deployment, apiEndpoint, tenantId, clientId, clientSecret, maxtokens, temperature);
 
-                // make Setup readonly
-                txtAPIEndPoint.IsReadOnly = true;
-                txtTenantId.IsReadOnly = true;
-                txtDeployment.IsReadOnly = true;
-                txtClientId.IsReadOnly = true;
-                txtClientSecret.IsReadOnly = true;
-                txtTemperature.IsReadOnly = true;
-                txtMaxTokens.IsReadOnly = true;
+                    // make Setup readonly
+                    txtAPIEndPoint.IsReadOnly = true;
+                    txtTenantId.IsReadOnly = true;
+                    txtDeployment.IsReadOnly = true;
+                    txtClientId.IsReadOnly = true;
+                    txtClientSecret.IsReadOnly = true;
+                    txtTemperature.IsReadOnly = true;
+                    txtMaxTokens.IsReadOnly = true;
 
-                // Programmatically hide the top area
-                topRow.Height = new GridLength(0);
+                    // Programmatically hide the top area
+                    topRow.Height = new GridLength(0);
+                }
+                catch (Exception ex)
+                {
+                    lblCompletion.Content = "Authentication/Initialization failed. Exception below";
+                    txtCompletion.Text = GetFullExceptionMessage(ex);
+                    MarkdownViewer.Markdown = string.Empty;
+                    return;
+                }
             }
 
             // Trim Prompt
@@ -154,7 +164,7 @@ namespace AzureOpenAIChat
             catch (Exception ex)
             {
                 lblCompletion.Content = "The request was unsuccessful. Exception below";
-                txtCompletion.Text = ex.Message;
+                txtCompletion.Text = GetFullExceptionMessage(ex);
                 MarkdownViewer.Markdown = string.Empty;
             }
             finally
@@ -185,6 +195,17 @@ namespace AzureOpenAIChat
 
             Clipboard.SetText(context);
             lblCompletion.Content = "Completion context copied to clipboard";
+        }
+
+        // Helper method to get full exception details including inner exceptions
+        private static string GetFullExceptionMessage(Exception ex)
+        {
+            var message = ex.Message;
+            if (ex.InnerException != null)
+            {
+                message += "\n\nInner Exception: " + GetFullExceptionMessage(ex.InnerException);
+            }
+            return message;
         }
     }
 }
