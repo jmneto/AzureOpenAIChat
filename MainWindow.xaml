@@ -4,7 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AzureOpenAIChat"
-        xmlns:mdxam="clr-namespace:MdXaml;assembly=MdXaml"
         mc:Ignorable="d"
         Title="Azure OpenAI Chat" 
         Height="540" 
@@ -45,8 +44,8 @@
         </Border>
 
         <Border Background="#FF66A6BB" Grid.Row="1" Name="middleArea">
-            <TabControl x:Name="tabCompletionControl" Margin="6">
-                <TabItem Header="Completion">
+            <TabControl x:Name="tabCompletionControl" Margin="6" SelectionChanged="tabCompletionControl_SelectionChanged">
+                <TabItem Header="Edit">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -54,7 +53,7 @@
                         </Grid.RowDefinitions>
                         <Label x:Name="lblCompletion" Content="Completion" HorizontalAlignment="Left" VerticalAlignment="Top" FontWeight="SemiBold" Grid.Row="0"/>
                         <TextBox x:Name="txtCompletion" 
-                                    IsReadOnly="True"
+                                    IsReadOnly="False"
                                     ScrollViewer.VerticalScrollBarVisibility="Auto" 
                                     ScrollViewer.HorizontalScrollBarVisibility="Auto" 
                                     TextWrapping="Wrap" 
@@ -68,24 +67,8 @@
                                     Grid.Row="1"/>
                     </Grid>
                 </TabItem>
-                <TabItem Header="Formatted Completion">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <Label x:Name="lblFormattedCompletion" Content="Formatted Completion" HorizontalAlignment="Left" VerticalAlignment="Top" FontWeight="SemiBold" Grid.Row="0"/>
-                        <Border BorderBrush="LightBlue" BorderThickness="1" Grid.Row="1">
-                            <mdxam:MarkdownScrollViewer x:Name="MarkdownViewer" 
-                                    ScrollViewer.VerticalScrollBarVisibility="Auto" 
-                                    ScrollViewer.HorizontalScrollBarVisibility="Auto" 
-                                    VerticalScrollBarVisibility="Auto"
-                                    HorizontalScrollBarVisibility="Auto"
-                                    xml:space="preserve" 
-                                    TabIndex="12"
-                                    Grid.Row="1"/>
-                        </Border>
-                    </Grid>
+                <TabItem Header="Preview">
+                    <WebBrowser x:Name="wbPreview"/>
                 </TabItem>
             </TabControl>
         </Border>

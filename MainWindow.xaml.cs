@@ -1,8 +1,11 @@
 ﻿// Azure Open AI Chat Client (Using Semantic Kernel)
 
 using System;
+using System.Reflection;
 using System.Windows;
+using System.Windows.Controls;
 using System.Globalization;
+using Markdig;
 
 namespace AzureOpenAIChat
 {
@@ -11,9 +14,16 @@ namespace AzureOpenAIChat
         // Azure OpenAI Chat Client (Using Semantic Kernel)
         SKHelper? sk;
 
+        /// <summary>Markdig pipeline for converting Markdown to HTML.</summary>
+        private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
         public MainWindow()
         {
             InitializeComponent();
+
+            // Get version from assembly
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
+            this.Title = $"Azure OpenAI Chat v{version?.Major}.{version?.Minor}";
 
             // Init/Load From Registry
             if (string.IsNullOrEmpty(txtAPIEndPoint.Text = RegistryHelper.ReadAppInfo("APIENDPOINT")))
@@ -124,7 +134,6 @@ namespace AzureOpenAIChat
                 {
                     lblCompletion.Content = "Authentication/Initialization failed. Exception below";
                     txtCompletion.Text = GetFullExceptionMessage(ex);
-                    MarkdownViewer.Markdown = string.Empty;
                     return;
                 }
             }
@@ -137,7 +146,6 @@ namespace AzureOpenAIChat
             {
                 // Reset Completion
                 txtCompletion.Text = string.Empty;
-                MarkdownViewer.Markdown = string.Empty;
                 lblCompletion.Content = "Completion context cleared";
                 btnClearCtx.IsEnabled = false;
                 btnCopyCtx.IsEnabled = false;
@@ -149,14 +157,12 @@ namespace AzureOpenAIChat
             // Wait message 
             lblCompletion.Content = "Request is processing...";
             txtCompletion.Text = string.Empty;
-            MarkdownViewer.Markdown = string.Empty;
             btnSend.IsEnabled = false;
 
             try
             {
                 var completionText = await sk.Chat(myprompt);
                 txtCompletion.Text = completionText;
-                MarkdownViewer.Markdown = completionText;
                 btnClearCtx.IsEnabled = true;
                 btnCopyCtx.IsEnabled = true;
                 lblCompletion.Content = "Completion";
@@ -165,7 +171,6 @@ namespace AzureOpenAIChat
             {
                 lblCompletion.Content = "The request was unsuccessful. Exception below";
                 txtCompletion.Text = GetFullExceptionMessage(ex);
-                MarkdownViewer.Markdown = string.Empty;
             }
             finally
             {
@@ -181,6 +186,27 @@ namespace AzureOpenAIChat
             if (sk != null)
                 sk.InitContext();
             lblCompletion.Content = "Completion context cleared";
+        }
+
+        // Tab selection changed - render preview when Preview tab is selected
+        private void tabCompletionControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.Source != tabCompletionControl) return;
+            if (tabCompletionControl.SelectedIndex == 1 && wbPreview != null)
+            {
+                RenderMarkdownPreview();
+            }
+        }
+
+        /// <summary>
+        /// Renders the current result text as HTML in the preview browser.
+        /// </summary>
+        private void RenderMarkdownPreview()
+        {
+            var markdown = txtCompletion.Text ?? string.Empty;
+            var html = Markdig.Markdown.ToHtml(markdown, MarkdownPipeline);
+            var fullHtml = $"<html><head><meta charset=\"utf-8\"><style>body{{font-family:'Segoe UI',sans-serif;font-size:14px;padding:10px;}}code{{background:#f0f0f0;padding:2px 4px;border-radius:3px;}}pre{{background:#f0f0f0;padding:10px;border-radius:5px;overflow-x:auto;}}table{{border-collapse:collapse;}}th,td{{border:1px solid #ccc;padding:6px 10px;}}</style></head><body>{html}</body></html>";
+            wbPreview.NavigateToString(fullHtml);
         }
 
         // Copy Context
