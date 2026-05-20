@@ -2,6 +2,7 @@
 
 using System;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Globalization;
@@ -17,6 +18,14 @@ namespace AzureOpenAIChat
         /// <summary>Markdig pipeline for converting Markdown to HTML.</summary>
         private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
+        /// <summary>Regex to strip dangerous HTML elements for the IE-based WebBrowser control.</summary>
+        private static readonly Regex HtmlSanitizeRegex = new(
+            @"<script[^>]*>.*?</script>|<script[^>]*/?>|<iframe[^>]*>.*?</iframe>|<iframe[^>]*/?>",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+        private static readonly Regex HtmlEventAttrRegex = new(
+            @"\s+on\w+\s*=\s*(?:""[^""]*""|'[^']*'|\S+)",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         public MainWindow()
         {
             InitializeComponent();
@@ -26,33 +35,20 @@ namespace AzureOpenAIChat
             this.Title = $"Azure OpenAI Chat v{version?.Major}.{version?.Minor}";
 
             // Init/Load From Registry
-            if (string.IsNullOrEmpty(txtAPIEndPoint.Text = RegistryHelper.ReadAppInfo("APIENDPOINT")))
-                txtAPIEndPoint.Text = "Your Azure OpenAI Endpoint";
-
-            if (string.IsNullOrEmpty(txtTenantId.Text = RegistryHelper.ReadAppInfo("TENANTID")))
-                txtTenantId.Text = "Your Entra Tenant ID";
-
-            if (string.IsNullOrEmpty(txtDeployment.Text = RegistryHelper.ReadAppInfo("DEPLOYMENT")))
-                txtDeployment.Text = "Your Azure OpenAI Model Deployment Name";
-
-            if (string.IsNullOrEmpty(txtClientId.Text = RegistryHelper.ReadAppInfo("CLIENTID")))
-                txtClientId.Text = "Your App Registration Client ID";
-
-            if (string.IsNullOrEmpty(txtClientSecret.Text = RegistryHelper.ReadAppInfo("CLIENTSECRET")))
-                txtClientSecret.Text = "Your App Registration Client Secret";
-
-            if (string.IsNullOrEmpty(txtTemperature.Text = RegistryHelper.ReadAppInfo("TEMPERATURE")))
-                txtTemperature.Text = "0.5";
-
-            if (string.IsNullOrEmpty(txtMaxTokens.Text = RegistryHelper.ReadAppInfo("MAXTOKENS")))
-                txtMaxTokens.Text = "2048";
+            txtAPIEndPoint.Text = NullIfEmpty(RegistryHelper.ReadAppInfo("APIENDPOINT")) ?? "Your Azure OpenAI Endpoint";
+            txtTenantId.Text = NullIfEmpty(RegistryHelper.ReadAppInfo("TENANTID")) ?? "Your Entra Tenant ID";
+            txtDeployment.Text = NullIfEmpty(RegistryHelper.ReadAppInfo("DEPLOYMENT")) ?? "Your Azure OpenAI Model Deployment Name";
+            txtClientId.Text = NullIfEmpty(RegistryHelper.ReadAppInfo("CLIENTID")) ?? "Your App Registration Client ID";
+            txtClientSecret.Text = NullIfEmpty(RegistryHelper.ReadAppInfo("CLIENTSECRET")) ?? "Your App Registration Client Secret";
 
             var left = RegistryHelper.ReadAppInfo("WINDOWLEFT");
             var top = RegistryHelper.ReadAppInfo("WINDOWTOP");
-            if (!string.IsNullOrEmpty(left) && !string.IsNullOrEmpty(top))
+            if (!string.IsNullOrEmpty(left) && !string.IsNullOrEmpty(top)
+                && double.TryParse(left, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsedLeft)
+                && double.TryParse(top, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsedTop))
             {
-                this.Left = double.Parse(left);
-                this.Top = double.Parse(top);
+                this.Left = parsedLeft;
+                this.Top = parsedTop;
             }
             else
             {
@@ -69,16 +65,19 @@ namespace AzureOpenAIChat
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            // Save to Registry
-            RegistryHelper.WriteAppInfo("APIENDPOINT", txtAPIEndPoint.Text);
-            RegistryHelper.WriteAppInfo("TENANTID", txtTenantId.Text);
-            RegistryHelper.WriteAppInfo("DEPLOYMENT", txtDeployment.Text);
-            RegistryHelper.WriteAppInfo("CLIENTID", txtClientId.Text);
-            RegistryHelper.WriteAppInfo("CLIENTSECRET", txtClientSecret.Text);
-            RegistryHelper.WriteAppInfo("TEMPERATURE", txtTemperature.Text);
-            RegistryHelper.WriteAppInfo("MAXTOKENS", txtMaxTokens.Text);
-            RegistryHelper.WriteAppInfo("WINDOWLEFT", this.Left.ToString());
-            RegistryHelper.WriteAppInfo("WINDOWTOP", this.Top.ToString());
+            // Save to Registry (skip placeholder values)
+            if (!txtAPIEndPoint.Text.StartsWith("Your ", StringComparison.OrdinalIgnoreCase))
+                RegistryHelper.WriteAppInfo("APIENDPOINT", txtAPIEndPoint.Text);
+            if (!txtTenantId.Text.StartsWith("Your ", StringComparison.OrdinalIgnoreCase))
+                RegistryHelper.WriteAppInfo("TENANTID", txtTenantId.Text);
+            if (!txtDeployment.Text.StartsWith("Your ", StringComparison.OrdinalIgnoreCase))
+                RegistryHelper.WriteAppInfo("DEPLOYMENT", txtDeployment.Text);
+            if (!txtClientId.Text.StartsWith("Your ", StringComparison.OrdinalIgnoreCase))
+                RegistryHelper.WriteAppInfo("CLIENTID", txtClientId.Text);
+            if (!txtClientSecret.Text.StartsWith("Your ", StringComparison.OrdinalIgnoreCase))
+                RegistryHelper.WriteAppInfo("CLIENTSECRET", txtClientSecret.Text);
+            RegistryHelper.WriteAppInfo("WINDOWLEFT", this.Left.ToString(CultureInfo.InvariantCulture));
+            RegistryHelper.WriteAppInfo("WINDOWTOP", this.Top.ToString(CultureInfo.InvariantCulture));
         }
 
         private async void btnSend_Click(object sender, RoutedEventArgs e)
@@ -96,27 +95,20 @@ namespace AzureOpenAIChat
                     string.IsNullOrWhiteSpace(tenantId) ||
                     string.IsNullOrWhiteSpace(deployment) ||
                     string.IsNullOrWhiteSpace(clientId) ||
-                    string.IsNullOrWhiteSpace(clientSecret))
+                    string.IsNullOrWhiteSpace(clientSecret) ||
+                    apiEndpoint.StartsWith("Your ", StringComparison.OrdinalIgnoreCase) ||
+                    tenantId.StartsWith("Your ", StringComparison.OrdinalIgnoreCase) ||
+                    deployment.StartsWith("Your ", StringComparison.OrdinalIgnoreCase) ||
+                    clientId.StartsWith("Your ", StringComparison.OrdinalIgnoreCase) ||
+                    clientSecret.StartsWith("Your ", StringComparison.OrdinalIgnoreCase))
                 {
                     MessageBox.Show("Please fill in all required settings.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
-                if (!double.TryParse(txtTemperature.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double temperature))
-                {
-                    MessageBox.Show("Temperature must be a valid number (example: 0.5).", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                if (!int.TryParse(txtMaxTokens.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int maxtokens))
-                {
-                    MessageBox.Show("Max Tokens must be a valid integer.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
                 try
                 {
-                    sk = new SKHelper(deployment, apiEndpoint, tenantId, clientId, clientSecret, maxtokens, temperature);
+                    sk = new SKHelper(deployment, apiEndpoint, tenantId, clientId, clientSecret);
 
                     // make Setup readonly
                     txtAPIEndPoint.IsReadOnly = true;
@@ -124,8 +116,6 @@ namespace AzureOpenAIChat
                     txtDeployment.IsReadOnly = true;
                     txtClientId.IsReadOnly = true;
                     txtClientSecret.IsReadOnly = true;
-                    txtTemperature.IsReadOnly = true;
-                    txtMaxTokens.IsReadOnly = true;
 
                     // Programmatically hide the top area
                     topRow.Height = new GridLength(0);
@@ -205,7 +195,10 @@ namespace AzureOpenAIChat
         {
             var markdown = txtCompletion.Text ?? string.Empty;
             var html = Markdig.Markdown.ToHtml(markdown, MarkdownPipeline);
-            var fullHtml = $"<html><head><meta charset=\"utf-8\"><style>body{{font-family:'Segoe UI',sans-serif;font-size:14px;padding:10px;}}code{{background:#f0f0f0;padding:2px 4px;border-radius:3px;}}pre{{background:#f0f0f0;padding:10px;border-radius:5px;overflow-x:auto;}}table{{border-collapse:collapse;}}th,td{{border:1px solid #ccc;padding:6px 10px;}}</style></head><body>{html}</body></html>";
+            // Strip dangerous HTML elements and event handler attributes
+            html = HtmlSanitizeRegex.Replace(html, string.Empty);
+            html = HtmlEventAttrRegex.Replace(html, string.Empty);
+            var fullHtml = $"<html><head><meta charset=\"utf-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"><style>body{{font-family:'Segoe UI',sans-serif;font-size:14px;padding:10px;}}code{{background:#f0f0f0;padding:2px 4px;border-radius:3px;}}pre{{background:#f0f0f0;padding:10px;border-radius:5px;overflow-x:auto;}}table{{border-collapse:collapse;}}th,td{{border:1px solid #ccc;padding:6px 10px;}}</style></head><body>{html}</body></html>";
             wbPreview.NavigateToString(fullHtml);
         }
 
@@ -224,14 +217,17 @@ namespace AzureOpenAIChat
         }
 
         // Helper method to get full exception details including inner exceptions
-        private static string GetFullExceptionMessage(Exception ex)
+        private static string GetFullExceptionMessage(Exception ex, int maxDepth = 5)
         {
             var message = ex.Message;
-            if (ex.InnerException != null)
+            if (ex.InnerException != null && maxDepth > 0)
             {
-                message += "\n\nInner Exception: " + GetFullExceptionMessage(ex.InnerException);
+                message += "\n\nInner Exception: " + GetFullExceptionMessage(ex.InnerException, maxDepth - 1);
             }
             return message;
         }
+
+        private static string? NullIfEmpty(string? value) =>
+            string.IsNullOrEmpty(value) ? null : value;
     }
 }

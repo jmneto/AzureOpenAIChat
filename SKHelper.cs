@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Azure.Identity;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Connectors.OpenAI;
 
 namespace AzureOpenAIChat
 {
@@ -30,13 +29,13 @@ namespace AzureOpenAIChat
         int _historyChars;
 
         // Constructor
-        public SKHelper(string model, string azureEndpoint, string tenantId, string clientId, string clientSecret, int maxTokens, double temperature, double topP = 0.5)
+        public SKHelper(string model, string azureEndpoint, string tenantId, string clientId, string clientSecret)
         {
             // In the constructor, wrap credential creation in try-catch for diagnostics
             try
             {
                 var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
-                
+
                 // Test the credential explicitly before using it
                 var tokenRequestContext = new Azure.Core.TokenRequestContext(
                     new[] { "https://cognitiveservices.azure.com/.default" });
@@ -52,14 +51,7 @@ namespace AzureOpenAIChat
                 throw new Exception($"Authentication failed: {ex.Message}", ex);
             }
 
-            OpenAIPromptExecutionSettings requestSettings = new()
-            {
-                //MaxTokens = maxTokens,
-                //Temperature = temperature,
-                //TopP = topP,
-            };
-
-            _chatFunction = _kernel.CreateFunctionFromPrompt(_skPrompt, requestSettings);
+            _chatFunction = _kernel.CreateFunctionFromPrompt(_skPrompt);
             _arguments = new();
 
             InitContext();

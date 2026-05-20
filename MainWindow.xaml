@@ -31,15 +31,11 @@
                 <Label x:Name="label2" Content="Deployment:" HorizontalAlignment="Left"  Margin="12,40,0,0" VerticalAlignment="Top" Width="100" FontWeight="SemiBold"/>
                 <Label x:Name="label5" Content="Client ID:" HorizontalAlignment="Left" Margin="422,40,0,0" VerticalAlignment="Top" Width="86" FontWeight="SemiBold"/>
                 <Label x:Name="label6" Content="Client Secret:" HorizontalAlignment="Left" Margin="12,70,0,0" VerticalAlignment="Top" Width="100" FontWeight="SemiBold"/>
-                <Label x:Name="label3" Content="Temperature:" HorizontalAlignment="Left" Margin="423,69,0,0" VerticalAlignment="Top" Width="109" FontWeight="SemiBold"/>
-                <Label x:Name="label4" Content="Max Tokens:" HorizontalAlignment="Left" Margin="616,70,0,0" VerticalAlignment="Top" Width="101" FontWeight="SemiBold"/>
                 <TextBox x:Name="txtAPIEndPoint" HorizontalAlignment="Left" Margin="112,15,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="300" TabIndex="0"/>
                 <TextBox x:Name="txtTenantId" HorizontalAlignment="Left" Margin="489,15,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="285" TabIndex="1"/>
                 <TextBox x:Name="txtDeployment" HorizontalAlignment="Left" Margin="112,45,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="300" TabIndex="2"/>
                 <TextBox x:Name="txtClientId" HorizontalAlignment="Left" Margin="489,45,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="285" TabIndex="3"/>
                 <TextBox x:Name="txtClientSecret" HorizontalAlignment="Left" Margin="112,75,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="300" TabIndex="4"/>
-                <TextBox x:Name="txtTemperature" HorizontalAlignment="Left" Margin="525,74,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="60" TabIndex="5"/>
-                <TextBox x:Name="txtMaxTokens" HorizontalAlignment="Left" Margin="700,75,11,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="60" TabIndex="6"/>
             </Grid>
         </Border>
 
